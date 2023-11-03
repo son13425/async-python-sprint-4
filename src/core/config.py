@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     host: str
     port: int
     database_dsn: PostgresDsn
+    secret: str = 'SECRET'
 
     class Config:
         env_file = '.env'
@@ -25,3 +26,4 @@ settings = Settings()
 # Допустимый размер ссылок
 ORIGINAL_LEN = 2048
 SHORT_LEN = 16
+CUSTOM_ID_LEN = 6
