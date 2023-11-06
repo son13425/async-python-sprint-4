@@ -8,5 +8,5 @@ from api.endpoints import (
 
 main_router = APIRouter()
 
-main_router.include_router(link_router, prefix='/links', tags=['link'],)
+main_router.include_router(link_router, tags=['links'],)
 main_router.include_router(user_router)

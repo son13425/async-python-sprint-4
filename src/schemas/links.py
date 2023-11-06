@@ -11,6 +11,9 @@ class LinksBase(BaseModel):
     password: Optional[str] = Field(None, max_length=SHORT_LEN)
     is_active: Optional[bool] = Field(None, alias='is-active')
 
+    class Config:
+        orm_mode = True
+
 
 class LinksCreate(LinksBase):
     """Схема для создания ссылки"""
@@ -24,6 +27,17 @@ class LinksDB(LinksBase):
     user_id: int
     timestamp: datetime
     is_active: bool
+
+
+class LinkOriginalDB(LinksBase):
+    """Схема для ответа на запрос оригинальной ссылки"""
+    original: str = Field(..., max_length=ORIGINAL_LEN)
+
+
+class LinksAllDB(BaseModel):
+    """Схема для ответа на запрос всех ссылок"""
+    count_links: int
+    links: list[LinksDB]
 
     class Config:
         orm_mode = True

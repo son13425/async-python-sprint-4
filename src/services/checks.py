@@ -6,7 +6,7 @@ from sqlalchemy import select
 async def check_uniq_short(
     short: str,
     session: AsyncSession
-) -> bool:
+) -> int:
     """Проверка уникальности короткой ссылки"""
     short_links = await session.execute(
         select(LinksModel.id).where(
