@@ -5,18 +5,25 @@ from datetime import datetime
 
 class QueryDataBase(BaseModel):
     """Базовая схема для записи информации о запросе"""
-    short_link_id: int
-    ip_client: str
-    timestamp: datetime
+    short_link_id: Optional[int]
+    ip_client: Optional[str]
+    timestamp: Optional[datetime]
 
     class Config:
         orm_mode = True
 
 
+class QueryData(BaseModel):
+    """Схема ответа на запрос информации о запросе ссылки"""
+    ip_client: str
+    timestamp: datetime
+
+
 class AllQueryLinkDB(BaseModel):
-    """Базовая схема ответа о запросе ссылки"""
+    """Cхема ответа на запрос активности использования ссылки"""
+    short_link_id: int
     count_querys: int
-    querys: list[QueryDataBase]
+    querys: list[QueryData]
 
     class Config:
         orm_mode = True

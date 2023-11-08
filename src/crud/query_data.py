@@ -19,11 +19,18 @@ async def add_query_data(
 async def read_all_querys_link_from_db(
     short_link_id: int,
     session: AsyncSession
-) -> list[QueryDataModel]:
+) -> list[dict]:
     """Возвращает список всех запросов короткой ссылки"""
     db_querys_link = await session.execute(
         select(QueryDataModel).where(
             QueryDataModel.short_link_id == short_link_id
         )
     )
-    return db_querys_link.scalars().all()
+    list_db_querys_link = db_querys_link.scalars().all()
+    list_querys = []
+    for query in list_db_querys_link:
+        list_querys.append({
+            'ip_client': query.ip_client,
+            'timestamp': query.timestamp
+        })
+    return list_querys

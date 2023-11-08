@@ -1,16 +1,23 @@
 from core.user import current_user
 from models import User
-from fastapi import APIRouter, Depends,  HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from db.db import get_session
 
 from crud.links import (create_new_short_link,
                         read_all_links_from_db,
-                        get_original_link_by_short)
-from crud.query_data import add_query_data, read_all_querys_link_from_db
-from schemas.links import LinksCreate, LinksDB, LinkOriginalDB, LinksAllDB
+                        update_link_db, get_link_obj,
+                        get_link_id, read_all_links_user_from_db)
+from crud.query_data import (add_query_data,
+                             read_all_querys_link_from_db)
+from schemas.links import (LinksCreate, LinksDB,
+                           LinkOriginalDB, LinksAllDB,
+                           LinkUpdateDB, LinksUpdate,
+                           LinkPassword, AllLinksUserDB,
+                           AnswerLinkOriginal, RequestLinkOriginal)
 from schemas.query_data import AllQueryLinkDB
-from services.checks import check_uniq_short
+from services.checks import (check_uniq_short,
+                             chek_user_is_author)
 from datetime import datetime
 
 
@@ -18,7 +25,7 @@ router = APIRouter()
 
 
 @router.post(
-    '/link/',
+    '/link',
     response_model=LinksDB,
     response_model_exclude_none=True
 )
@@ -28,14 +35,37 @@ async def create_new_link(
         user: User = Depends(current_user)
 ):
     """Создает новую короткую ссылку"""
-    short_link_id = await check_uniq_short(link.short, session)
-    if short_link_id is not None:
+    short_link_uniq = await check_uniq_short(link.short, session)
+    if short_link_uniq is False:
         raise HTTPException(
             status_code=422,
             detail='Такая короткая ссылка уже существует!',
         )
     new_link = await create_new_short_link(link, session, user)
     return new_link
+
+
+@router.post(
+    '/links',
+    response_model=list[AnswerLinkOriginal],
+    response_model_exclude_none=True
+)
+async def create_new_links(
+        links: list[RequestLinkOriginal],
+        session: AsyncSession = Depends(get_session),
+        user: User = Depends(current_user)
+):
+    """Создает новые короткие ссылки по списку (batch upload)"""
+    list_short_links = []
+    for link in links:
+        link_original = {'original': link.dict()['original_url']}
+        link_query = LinksCreate(**link_original)
+        new_link = await create_new_short_link(link_query, session, user)
+        list_short_links.append({
+            'short-id': new_link.short,
+            'short-url': new_link.url_short
+        })
+    return list_short_links
 
 
 @router.get(
@@ -63,31 +93,53 @@ async def get_all_links(
     return {'count_links': count_links, 'links': all_links}
 
 
-@router.get(
+@router.post(
     '/{short_link}',
     response_model=LinkOriginalDB,
     response_model_exclude_none=True,
 )
 async def get_original_link(
     short_link: str,
+    password: LinkPassword,
     request: Request,
-    session: AsyncSession = Depends(get_session),
+    session: AsyncSession = Depends(get_session)
 ):
     """Возвращает оригинальную ссылку по короткой"""
-    short_link_id = await check_uniq_short(short_link, session)
-    if short_link_id is None:
+    link_obj = await get_link_obj(short_link, session)
+    if link_obj is None:
         raise HTTPException(
-            status_code=422,
+            status_code=410,
             detail='Такая короткая ссылка не существует!',
         )
+    if link_obj.is_active is False:
+        raise HTTPException(
+            status_code=410,
+            detail='Cсылка не существует!',
+        )
     dict_short_request = {
-        'short_link_id': short_link_id,
+        'short_link_id': link_obj.id,
         'ip_client': request.client.host,
         'timestamp': datetime.now()
     }
     await add_query_data(dict_short_request, session)
-    original_link = await get_original_link_by_short(short_link, session)
-    return {'original': original_link}
+    if link_obj.password is None:
+        original_link = link_obj.original
+        return {'original': original_link}
+    else:
+        password_link = password.dict()['password']
+        if password_link in [None, '']:
+            raise HTTPException(
+                status_code=400,
+                detail='Введите пароль!',
+            )
+        elif password_link != link_obj.password:
+            raise HTTPException(
+                status_code=400,
+                detail='Неверный пароль!',
+            )
+        else:
+            original_link = link_obj.original
+            return {'original': original_link}
 
 
 @router.get(
@@ -106,7 +158,7 @@ async def get_all_querys_link(
             status_code=401,
             detail='Доступно только суперюзеру',
         )
-    short_link_id = await check_uniq_short(short_link, session)
+    short_link_id = await get_link_id(short_link, session)
     if short_link_id is None:
         raise HTTPException(
             status_code=422,
@@ -119,4 +171,95 @@ async def get_all_querys_link(
             status_code=422,
             detail='Ссылку не запрашивали',
         )
-    return {'count_querys': count_querys_link, 'querys': all_querys_link}
+    return {
+        'short_link_id': short_link_id,
+        'count_querys': count_querys_link,
+        'querys': all_querys_link
+    }
+
+
+@router.delete(
+    '/{short_link}',
+    response_model=LinkUpdateDB,
+    response_model_exclude_none=True,
+)
+async def delete_link(
+    short_link: str,
+    session: AsyncSession = Depends(get_session),
+    user: User = Depends(current_user)
+):
+    """Удаляет ссылку(делает ее неактивной)"""
+    link_obj = await get_link_obj(short_link, session)
+    if link_obj is None:
+        raise HTTPException(
+            status_code=410,
+            detail='Такая короткая ссылка не существует!',
+        )
+    if link_obj.is_active is False:
+        raise HTTPException(
+            status_code=410,
+            detail='Cсылка не существует!',
+        )
+    user_is_author = await chek_user_is_author(link_obj.user_id, user.id)
+    if (user.is_superuser or user_is_author) is True:
+        dict_data = {'is_active': False}
+        await update_link_db(link_obj, dict_data, session)
+    else:
+        raise HTTPException(
+            status_code=401,
+            detail='Доступно только суперюзеру и автору',
+        )
+    return {'message': 'Ссылка успешно удалена'}
+
+
+@router.patch(
+    '/{short_link}',
+    response_model=LinkUpdateDB,
+    response_model_exclude_none=True
+)
+async def partially_update_link(
+    short_link: str,
+    link_obj_in: LinksUpdate,
+    session: AsyncSession = Depends(get_session),
+    user: User = Depends(current_user)
+):
+    """Обновляет объект ссылки в БД"""
+    link_obj = await get_link_obj(short_link, session)
+    if link_obj is None:
+        raise HTTPException(
+            status_code=410,
+            detail='Такая короткая ссылка не существует!',
+        )
+    user_is_author = await chek_user_is_author(link_obj.user_id, user.id)
+    if (user.is_superuser or user_is_author) is True:
+        dict_data = link_obj_in.dict(exclude_unset=True)
+        await update_link_db(link_obj, dict_data, session)
+        return {'message': 'Ссылка успешно отредактирована'}
+    else:
+        raise HTTPException(
+            status_code=401,
+            detail='Доступно только суперюзеру и автору',
+        )
+
+
+@router.get(
+    '/user/status',
+    response_model=AllLinksUserDB,
+    response_model_exclude_none=True,
+)
+async def get_all_links_user(
+    session: AsyncSession = Depends(get_session),
+    user: User = Depends(current_user)
+):
+    """Возвращает информацию обо всех ссылках, созданных юзером"""
+    all_links_user = await read_all_links_user_from_db(user.id, session)
+    count_links = len(all_links_user)
+    if count_links == 0:
+        raise HTTPException(
+            status_code=422,
+            detail='Пользователь не создавал ссылок',
+        )
+    return {
+        'count_links': count_links,
+        'links': all_links_user
+    }

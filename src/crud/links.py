@@ -1,11 +1,13 @@
 from models.links_model import LinksModel
-from schemas.links import LinksCreate
+from schemas.links import LinksCreate, LinksUserDB
 from sqlalchemy import select
 from datetime import datetime
 from models import User
 from sqlalchemy.ext.asyncio import AsyncSession
-from services.creators import get_unique_short_id
+from services.creators import create_unique_short_link
 from core.config import settings
+from fastapi.encoders import jsonable_encoder
+from typing import Optional, Any
 
 
 async def create_new_short_link(
@@ -19,9 +21,12 @@ async def create_new_short_link(
     new_link_data['timestamp'] = timestamp
     new_link_data['user_id'] = user.id
     if new_link_data['short'] in [None, ""]:
-        new_link_data['short'] = get_unique_short_id()
+        new_link_data['short'] = create_unique_short_link()
     if new_link_data['password'] in [None, ""]:
         new_link_data['password'] = None
+    short_link = new_link_data['short']
+    url_link = f'http://{settings.host}:{settings.port}/{short_link}'
+    new_link_data['url_short'] = url_link
     db_link = LinksModel(**new_link_data)
     session.add(db_link)
     await session.commit()
@@ -37,15 +42,77 @@ async def read_all_links_from_db(
     return db_links.scalars().all()
 
 
-async def get_original_link_by_short(
+async def update_link_db(
+    link_obj: LinksModel,
+    dict_data: dict,
+    session: AsyncSession
+) -> LinksModel:
+    """Обновляет ссылку"""
+    obj_data = jsonable_encoder(link_obj)
+    update_data = dict_data
+    for field in obj_data:
+        if field in update_data:
+            setattr(link_obj, field, update_data[field])
+    session.add(link_obj)
+    await session.commit()
+    await session.refresh(link_obj)
+    return link_obj
+
+
+async def get_link_id(
     short_link: str,
-    session: AsyncSession,
-) -> str:
-    """Возвращает оригинальную ссылку по короткой"""
-    db_links = await session.execute(
-        select(LinksModel.original).where(
+    session: AsyncSession
+) -> Optional[int]:
+    """Возвращает id ссылки"""
+    links_id = await session.execute(
+        select(LinksModel.id).where(
             LinksModel.short == short_link
         )
     )
-    db_original_link = db_links.scalars().first()
-    return db_original_link
+    link_id = links_id.scalars().first()
+    return link_id
+
+
+async def get_link_obj(
+    short_link: str,
+    session: AsyncSession
+) -> LinksModel:
+    """Возвращает объект БД для ссылки"""
+    links_obj = await session.execute(
+        select(LinksModel).where(
+            LinksModel.short == short_link
+        )
+    )
+    link_obj = links_obj.scalars().first()
+    return link_obj
+
+
+async def read_all_links_user_from_db(
+    user_id: int,
+    session: AsyncSession
+) -> list[LinksUserDB]:
+    """Возвращает все ссылки текущего юзера"""
+    db_objs = await session.execute(
+        select(LinksModel).where(
+            LinksModel.user_id == user_id
+        )
+    )
+    list_objs =  db_objs.scalars().all()
+    list_links = []
+    for obj in list_objs:
+        if obj.password == None:
+            type_link = 'public'
+        else:
+            type_link = 'private'
+        if obj.is_active == True:
+            status_link = 'active'
+        else:
+            status_link = 'delete'
+        list_links.append({
+            'short-id': obj.short,
+            'short-url': obj.url_short,
+            'original-url': obj.original,
+            'type': type_link,
+            'status': status_link
+        })
+    return list_links
