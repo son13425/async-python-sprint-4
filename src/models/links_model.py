@@ -1,8 +1,9 @@
 from datetime import datetime
-from sqlalchemy import Column, DateTime, String, Integer, ForeignKey, Boolean
 
-from db.db import Base
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String
+
 from core.config import ORIGINAL_LEN, SHORT_LEN, URL_SHORT_LEN
+from db.db import Base
 
 
 class LinksModel(Base):

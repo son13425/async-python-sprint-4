@@ -1,9 +1,7 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from core.user import auth_backend, fastapi_users
-from fastapi import APIRouter, HTTPException
 from schemas.user import UserCreate, UserRead, UserUpdate
-
 
 router = APIRouter()
 
@@ -28,6 +26,7 @@ router.include_router(
     prefix='/users',
     tags=['users'],
 )
+
 
 @router.delete(
     # Путь и тег полностью копируют параметры эндпоинта по умолчанию.

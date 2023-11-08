@@ -1,6 +1,7 @@
-from models.query_data import QueryDataModel
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from models.query_data import QueryDataModel
 
 
 async def add_query_data(

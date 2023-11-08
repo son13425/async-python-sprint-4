@@ -1,13 +1,15 @@
+from datetime import datetime
+from typing import Optional, Any
+
+from fastapi.encoders import jsonable_encoder
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from core.config import settings
+from models import User
 from models.links_model import LinksModel
 from schemas.links import LinksCreate, LinksUserDB
-from sqlalchemy import select
-from datetime import datetime
-from models import User
-from sqlalchemy.ext.asyncio import AsyncSession
 from services.creators import create_unique_short_link
-from core.config import settings
-from fastapi.encoders import jsonable_encoder
-from typing import Optional, Any
 
 
 async def create_new_short_link(
@@ -90,21 +92,21 @@ async def get_link_obj(
 async def read_all_links_user_from_db(
     user_id: int,
     session: AsyncSession
-) -> list[LinksUserDB]:
+) -> list[dict[str, Any]]:
     """Возвращает все ссылки текущего юзера"""
     db_objs = await session.execute(
         select(LinksModel).where(
             LinksModel.user_id == user_id
         )
     )
-    list_objs =  db_objs.scalars().all()
+    list_objs = db_objs.scalars().all()
     list_links = []
     for obj in list_objs:
-        if obj.password == None:
+        if obj.password is None:
             type_link = 'public'
         else:
             type_link = 'private'
-        if obj.is_active == True:
+        if obj.is_active:
             status_link = 'active'
         else:
             status_link = 'delete'

@@ -1,25 +1,20 @@
-from core.user import current_user
-from models import User
-from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlalchemy.ext.asyncio import AsyncSession
-from db.db import get_session
-
-from crud.links import (create_new_short_link,
-                        read_all_links_from_db,
-                        update_link_db, get_link_obj,
-                        get_link_id, read_all_links_user_from_db)
-from crud.query_data import (add_query_data,
-                             read_all_querys_link_from_db)
-from schemas.links import (LinksCreate, LinksDB,
-                           LinkOriginalDB, LinksAllDB,
-                           LinkUpdateDB, LinksUpdate,
-                           LinkPassword, AllLinksUserDB,
-                           AnswerLinkOriginal, RequestLinkOriginal)
-from schemas.query_data import AllQueryLinkDB
-from services.checks import (check_uniq_short,
-                             chek_user_is_author)
 from datetime import datetime
 
+from fastapi import APIRouter, Depends, HTTPException, Request
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from core.user import current_user
+from crud.links import (create_new_short_link, get_link_id, get_link_obj,
+                        read_all_links_from_db, read_all_links_user_from_db,
+                        update_link_db)
+from crud.query_data import add_query_data, read_all_querys_link_from_db
+from db.db import get_session
+from models import User
+from schemas.links import (AllLinksUserDB, AnswerLinkOriginal, LinkOriginalDB,
+                           LinkPassword, LinksAllDB, LinksCreate, LinksDB,
+                           LinksUpdate, LinkUpdateDB, RequestLinkOriginal)
+from schemas.query_data import AllQueryLinkDB
+from services.checks import check_uniq_short, chek_user_is_author
 
 router = APIRouter()
 
@@ -164,7 +159,10 @@ async def get_all_querys_link(
             status_code=422,
             detail='Такая короткая ссылка не существует!',
         )
-    all_querys_link = await read_all_querys_link_from_db(short_link_id, session)
+    all_querys_link = await read_all_querys_link_from_db(
+        short_link_id,
+        session
+    )
     count_querys_link = len(all_querys_link)
     if count_querys_link == 0:
         raise HTTPException(

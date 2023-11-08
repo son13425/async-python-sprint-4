@@ -1,7 +1,9 @@
-from typing import Optional
-from pydantic import BaseModel, Field
-from core.config import ORIGINAL_LEN, SHORT_LEN, URL_SHORT_LEN
 from datetime import datetime
+from typing import Optional
+
+from pydantic import BaseModel, Field
+
+from core.config import ORIGINAL_LEN, SHORT_LEN, URL_SHORT_LEN
 
 
 class LinksBase(BaseModel):

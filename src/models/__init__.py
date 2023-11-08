@@ -1,3 +1,3 @@
-from .links_model import LinksModel
-from .user import User
-from .query_data import QueryDataModel
+from .links_model import LinksModel  # noqa
+from .query_data import QueryDataModel  # noqa
+from .user import User  # noqa

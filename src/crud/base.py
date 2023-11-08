@@ -1,15 +1,16 @@
 from typing import Optional
-...
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from models import User
 
-...
 
 async def create(
-        self,
-        obj_in,
-        session: AsyncSession,
-        # Добавьте опциональный параметр user.
-        user: Optional[User] = None
+    self,
+    obj_in,
+    session: AsyncSession,
+    # Добавьте опциональный параметр user.
+    user: Optional[User] = None
 ):
     obj_in_data = obj_in.dict()
     # Если пользователь был передан...

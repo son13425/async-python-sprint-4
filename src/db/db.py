@@ -1,7 +1,8 @@
-from core.config import settings
 from sqlalchemy import Column, Integer
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import declarative_base, declared_attr, sessionmaker
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+
+from core.config import settings
 
 
 class PreBase:
@@ -30,6 +31,7 @@ async_session = sessionmaker(
     class_=AsyncSession,
     expire_on_commit=False
 )
+
 
 # Функция понадобится при внедрении зависимостей
 # Dependency

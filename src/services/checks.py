@@ -1,7 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from models.links_model import LinksModel
-from sqlalchemy import select
-from crud.links import get_link_id, get_link_obj
+
+from crud.links import get_link_id
 
 
 async def check_uniq_short(
@@ -13,17 +12,6 @@ async def check_uniq_short(
     if not short_link_id:
         return True
     return False
-
-
-# async def check_active_short(
-#     link: str,
-#     session: AsyncSession
-# ) -> bool:
-#     """Проверяет статус активности короткой ссылки"""
-#     short_link = await get_link_obj(short_link, session)
-#     if not short_link.is_active:
-#         return False
-#     return True
 
 
 async def chek_user_is_author(

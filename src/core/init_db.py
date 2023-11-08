@@ -4,8 +4,8 @@ from fastapi_users.exceptions import UserAlreadyExists
 from pydantic import EmailStr
 
 from core.config import settings
-from db.db import get_session
 from core.user import get_user_db, get_user_manager
+from db.db import get_session
 from schemas.user import UserCreate
 
 # Превращаем асинхронные генераторы в асинхронные менеджеры контекста.
