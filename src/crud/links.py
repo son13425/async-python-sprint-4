@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, Any
+from typing import Any, Optional
 
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy import select
@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from core.config import settings
 from models import User
 from models.links_model import LinksModel
-from schemas.links import LinksCreate, LinksUserDB
+from schemas.links import LinksCreate
 from services.creators import create_unique_short_link
 
 

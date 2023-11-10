@@ -14,10 +14,12 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 class Settings(BaseSettings):
-    name: str
-    host: str
-    port: int
-    database_dsn: PostgresDsn
+    name: str = 'Укорачиватель ссылок'
+    host: str = '0'
+    port: int = 8000
+    database_dsn: PostgresDsn = (
+        'postgresql+asyncpg://postgres:postgres@localhost:6000/postgres'
+    )
     secret: str = 'SECRET'
     first_superuser_email: Optional[EmailStr] = None
     first_superuser_password: Optional[str] = None
