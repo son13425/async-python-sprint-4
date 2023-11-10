@@ -102,3 +102,27 @@ GET /<shorten-url-id>/status?[full-info]&[max-result=10]&[offset=0]
 4. Приведите стиль кода в соответствие pep8, flake8, mypy.
 5. Логируйте результаты действий.
 6. Покройте написанный код тестами.
+
+
+## Инструкция
+
+1. Поднять тестовую базу:
+```
+sudo docker run   --rm     --name postgres-fastapi   -p 6000:5432   -e POSTGRES_USER=postgres   -e POSTGRES_PASSWORD=postgres   -e POSTGRES_DB=collection   -d postgres:14.5
+```
+2. Запуск тестов:
+```
+pytest -v -s tests/
+```
+3. Удалить тестовую базу:
+```
+sudo docker container rm <CONTAINER ID>
+```
+4. Поднять рабочую базу:
+```
+sudo docker run   --rm     --name postgres-fastapi   -p 5432:5432   -e POSTGRES_USER=postgres   -e POSTGRES_PASSWORD=postgres   -e POSTGRES_DB=collection   -d postgres:14.5
+```
+5. Запуск проекта (http://0.0.0.0:8000/docs):
+```
+python3 src/main.py
+```
