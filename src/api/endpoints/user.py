@@ -1,5 +1,6 @@
-from fastapi import APIRouter, HTTPException
 from http import HTTPStatus
+
+from fastapi import APIRouter, HTTPException
 
 from core.user import auth_backend, fastapi_users
 from schemas.user import UserCreate, UserRead, UserUpdate

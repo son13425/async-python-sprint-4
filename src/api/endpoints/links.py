@@ -1,4 +1,5 @@
 from datetime import datetime
+from http import HTTPStatus
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,8 +16,6 @@ from schemas.links import (AllLinksUserDB, AnswerLinkOriginal, LinkOriginalDB,
                            LinksUpdate, LinkUpdateDB, RequestLinkOriginal)
 from schemas.query_data import AllQueryLinkDB
 from services.checks import check_uniq_short, chek_user_is_author
-from http import HTTPStatus
-
 
 router = APIRouter()
 
