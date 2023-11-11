@@ -15,6 +15,8 @@ from schemas.links import (AllLinksUserDB, AnswerLinkOriginal, LinkOriginalDB,
                            LinksUpdate, LinkUpdateDB, RequestLinkOriginal)
 from schemas.query_data import AllQueryLinkDB
 from services.checks import check_uniq_short, chek_user_is_author
+from http import HTTPStatus
+
 
 router = APIRouter()
 
@@ -31,9 +33,9 @@ async def create_new_link(
 ):
     """Создает новую короткую ссылку"""
     short_link_uniq = await check_uniq_short(link.short, session)
-    if short_link_uniq is False:
+    if not short_link_uniq:
         raise HTTPException(
-            status_code=422,
+            status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
             detail='Такая короткая ссылка уже существует!',
         )
     new_link = await create_new_short_link(link, session, user)
@@ -75,13 +77,13 @@ async def get_all_links(
     """Возвращает все ссылки из базы"""
     if not user.is_superuser:
         raise HTTPException(
-            status_code=401,
+            status_code=HTTPStatus.UNAUTHORIZED,
             detail='Доступно только суперюзеру',
         )
     all_links = await read_all_links_from_db(session)
     if all_links is None:
         raise HTTPException(
-            status_code=422,
+            status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
             detail='В базе данных нет записей',
         )
     count_links = len(all_links)
@@ -103,12 +105,12 @@ async def get_original_link(
     link_obj = await get_link_obj(short_link, session)
     if link_obj is None:
         raise HTTPException(
-            status_code=410,
+            status_code=HTTPStatus.GONE,
             detail='Такая короткая ссылка не существует!',
         )
     if link_obj.is_active is False:
         raise HTTPException(
-            status_code=410,
+            status_code=HTTPStatus.GONE,
             detail='Cсылка не существует!',
         )
     dict_short_request = {
@@ -120,21 +122,19 @@ async def get_original_link(
     if link_obj.password is None:
         original_link = link_obj.original
         return {'original': original_link}
-    else:
-        password_link = password.dict()['password']
-        if password_link in [None, '']:
-            raise HTTPException(
-                status_code=400,
-                detail='Введите пароль!',
-            )
-        elif password_link != link_obj.password:
-            raise HTTPException(
-                status_code=400,
-                detail='Неверный пароль!',
-            )
-        else:
-            original_link = link_obj.original
-            return {'original': original_link}
+    password_link = password.dict()['password']
+    if not password_link:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail='Введите пароль!',
+        )
+    elif password_link != link_obj.password:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail='Неверный пароль!',
+        )
+    original_link = link_obj.original
+    return {'original': original_link}
 
 
 @router.get(
@@ -150,13 +150,13 @@ async def get_all_querys_link(
     """Возвращает информацию обо всех запросах ссылки"""
     if not user.is_superuser:
         raise HTTPException(
-            status_code=401,
+            status_code=HTTPStatus.UNAUTHORIZED,
             detail='Доступно только суперюзеру',
         )
     short_link_id = await get_link_id(short_link, session)
     if short_link_id is None:
         raise HTTPException(
-            status_code=422,
+            status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
             detail='Такая короткая ссылка не существует!',
         )
     all_querys_link = await read_all_querys_link_from_db(
@@ -166,7 +166,7 @@ async def get_all_querys_link(
     count_querys_link = len(all_querys_link)
     if count_querys_link == 0:
         raise HTTPException(
-            status_code=422,
+            status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
             detail='Ссылку не запрашивали',
         )
     return {
@@ -190,12 +190,12 @@ async def delete_link(
     link_obj = await get_link_obj(short_link, session)
     if link_obj is None:
         raise HTTPException(
-            status_code=410,
+            status_code=HTTPStatus.GONE,
             detail='Такая короткая ссылка не существует!',
         )
     if link_obj.is_active is False:
         raise HTTPException(
-            status_code=410,
+            status_code=HTTPStatus.GONE,
             detail='Cсылка не существует!',
         )
     user_is_author = await chek_user_is_author(link_obj.user_id, user.id)
@@ -204,7 +204,7 @@ async def delete_link(
         await update_link_db(link_obj, dict_data, session)
     else:
         raise HTTPException(
-            status_code=401,
+            status_code=HTTPStatus.UNAUTHORIZED,
             detail='Доступно только суперюзеру и автору',
         )
     return {'message': 'Ссылка успешно удалена'}
@@ -225,7 +225,7 @@ async def partially_update_link(
     link_obj = await get_link_obj(short_link, session)
     if link_obj is None:
         raise HTTPException(
-            status_code=410,
+            status_code=HTTPStatus.GONE,
             detail='Такая короткая ссылка не существует!',
         )
     user_is_author = await chek_user_is_author(link_obj.user_id, user.id)
@@ -233,11 +233,10 @@ async def partially_update_link(
         dict_data = link_obj_in.dict(exclude_unset=True)
         await update_link_db(link_obj, dict_data, session)
         return {'message': 'Ссылка успешно отредактирована'}
-    else:
-        raise HTTPException(
-            status_code=401,
-            detail='Доступно только суперюзеру и автору',
-        )
+    raise HTTPException(
+        status_code=HTTPStatus.UNAUTHORIZED,
+        detail='Доступно только суперюзеру и автору',
+    )
 
 
 @router.get(
@@ -254,7 +253,7 @@ async def get_all_links_user(
     count_links = len(all_links_user)
     if count_links == 0:
         raise HTTPException(
-            status_code=422,
+            status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
             detail='Пользователь не создавал ссылок',
         )
     return {

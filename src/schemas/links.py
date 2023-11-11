@@ -25,7 +25,7 @@ class LinksCreate(LinksBase):
 
 class LinksDB(LinksBase):
     """Схема для ответа на создание ссылки"""
-    id: int
+    id: str
     user_id: int
     timestamp: datetime
     is_active: bool

@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 class QueryDataBase(BaseModel):
     """Базовая схема для записи информации о запросе"""
-    short_link_id: Optional[int]
+    short_link_id: Optional[str]
     ip_client: Optional[str]
     timestamp: Optional[datetime]
 
@@ -22,7 +22,7 @@ class QueryData(BaseModel):
 
 class AllQueryLinkDB(BaseModel):
     """Cхема ответа на запрос активности использования ссылки"""
-    short_link_id: int
+    short_link_id: str
     count_querys: int
     querys: list[QueryData]
 

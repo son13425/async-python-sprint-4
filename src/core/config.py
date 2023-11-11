@@ -35,3 +35,6 @@ ORIGINAL_LEN = 2048
 SHORT_LEN = 16
 URL_SHORT_LEN = 36
 CUSTOM_ID_LEN = 6
+
+#  Настройки подключения к БД
+ECHO = True

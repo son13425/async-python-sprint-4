@@ -14,4 +14,8 @@ class LinksModel(Base):
     timestamp = Column(DateTime, index=True, default=datetime.utcnow)
     password = Column(String(SHORT_LEN), default=None)
     is_active = Column(Boolean, default=True)
-    user_id = Column(Integer, ForeignKey('user.id'))
+    user_id = Column(
+        Integer,
+        ForeignKey('user.id', ondelete='CASCADE'),
+        nullable=False
+    )
